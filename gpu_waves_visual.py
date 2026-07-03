@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     sim = WaveSimulation(
         size=(700, 700),
-        centimeters_count=200,
+        centimeters_count=350,
         speed=34300
         # speed=int(2.998e+10)
     )
