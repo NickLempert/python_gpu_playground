@@ -40,7 +40,9 @@ class WaveSimulation:
         self.bake_emitters()
 
     def bake_emitters(self):
-        self.baked_emitters = cuda.to_device(np.array(list(map(Emitter.to_list, self.emitters)), dtype=float))
+        self.baked_emitters = None
+        if self.emitters:
+            self.baked_emitters = cuda.to_device(np.array(list(map(Emitter.to_list, self.emitters)), dtype=float))
 
     def add_emitter(self, emitter: Emitter):
         self.emitters.append(emitter)
@@ -61,16 +63,32 @@ class WaveSimulation:
         dt /= 1000
         self.steps += 1
         iterations = math.ceil(self.speed * self.get_pixels_per_centimeter() * dt)
-        print(dt, iterations, self.get_pixels_per_centimeter())
         for _ in range(iterations):
             self.simulation_time += dt/iterations
-            gpu_waves_step_emitters(self.heights,
-                                    self.baked_emitters,
-                                    self.simulation_time,
-                                    self.get_pixels_per_centimeter(),
-                                    self.speed)
+            if self.emitters:
+                gpu_waves_step_emitters(self.heights,
+                                        self.baked_emitters,
+                                        self.simulation_time,
+                                        self.get_pixels_per_centimeter(),
+                                        self.speed)
             gpu_waves_step_heights(self.heights, self.velocities, 1)
             gpu_waves_step_velocities(self.heights, self.velocities, 1)
+
+    def get_image(self, black_and_white=False):
+        heights = self.heights.copy_to_host()
+        if black_and_white:
+            return Image.fromarray((heights*2000))
+        velocities = abs(self.velocities.copy_to_host())
+
+        # image = Image.fromarray(h * 255)
+        # image.show()
+        # image = Image.fromarray(-h * 255)
+        # image.show()
+        negative = heights * 100 * -1
+        positive = heights * 100
+        velocities = velocities * 255
+        image = Image.fromarray(np.dstack((negative, positive, velocities)).astype(np.uint8), 'RGB')
+        return image
 
 
 if __name__ == "__main__":
@@ -85,7 +103,7 @@ if __name__ == "__main__":
     sim.add_emitters(*[Emitter(random.randint(0, sim.heights.shape[0]),
                                random.randint(0, sim.heights.shape[1]),
                                random.uniform(0.5, 100),
-                               random.uniform(1, 1000),
+                               random.uniform(1, 100),
                                0) for _ in range(10)])
 
     length_milli_seconds = 2.5
@@ -96,15 +114,5 @@ if __name__ == "__main__":
     sim.step(length_milli_seconds-int(length_milli_seconds))
     t2 = time.perf_counter()
     print(t2-t)
-    h = sim.heights.copy_to_host()
-    v = abs(sim.velocities.copy_to_host())
 
-    # image = Image.fromarray(h * 255)
-    # image.show()
-    # image = Image.fromarray(-h * 255)
-    # image.show()
-    negative = h/min(h.reshape(-1))*200
-    positive = h/max(h.reshape(-1))*200
-    velocities = v*255/max(v.reshape(-1))
-    image = Image.fromarray(np.dstack((negative, positive, velocities)).astype(np.uint8), 'RGB')
-    image.show()
+    sim.get_image().show()
