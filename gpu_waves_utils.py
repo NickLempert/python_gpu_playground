@@ -56,12 +56,12 @@ def full_gpu_step(heights: np.ndarray, velocities: np.ndarray, dt: float):
 def gpu_waves_step_emitters(heights: np.ndarray,
                             emitters: np.ndarray,
                             simulation_time: float,
-                            pixels_to_centimeter: float,
+                            pixels_per_centimeter: float,
                             speed: float):
     x, y = cuda.grid(2)
     for e_x, e_y, wavelength, amplitude, offset in emitters:
         if e_x == x and e_y == y:
-            heights[x, y] = np.cos(offset + simulation_time/wavelength*pixels_to_centimeter*speed)*amplitude/wavelength
+            heights[x, y] = np.cos(offset + simulation_time / wavelength * pixels_per_centimeter * speed) * amplitude / wavelength
 
 
 if __name__ == '__main__':
