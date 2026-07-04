@@ -45,6 +45,7 @@ if __name__ == '__main__':
     arr = cuda.to_device(np.zeros((10000, 10000), dtype=float))
     print('start')
     voronoi(arr, 20, 200)
+    cuda.synchronize()
     print('end')
     arr_back = arr.copy_to_host()
     print('post_end')

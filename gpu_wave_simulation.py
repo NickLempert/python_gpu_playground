@@ -39,6 +39,8 @@ class WaveSimulation:
         self.baked_emitters = None
         self.bake_emitters()
 
+        self.uncomputed_time = 0
+
     def bake_emitters(self):
         self.baked_emitters = None
         if self.emitters:
@@ -62,9 +64,10 @@ class WaveSimulation:
     def step(self, dt: float):
         dt /= 1000
         self.steps += 1
-        iterations = math.ceil(self.speed * self.get_pixels_per_centimeter() * dt)
-        for _ in range(iterations):
-            self.simulation_time += dt/iterations
+        iterations = self.speed * self.get_pixels_per_centimeter() * dt + self.uncomputed_time
+        self.uncomputed_time = iterations - int(iterations)
+        for _ in range(int(iterations)):
+            self.simulation_time += 1 / self.speed / self.get_pixels_per_centimeter()
             if self.emitters:
                 gpu_waves_step_emitters(self.heights,
                                         self.baked_emitters,
