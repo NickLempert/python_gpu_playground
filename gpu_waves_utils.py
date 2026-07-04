@@ -42,7 +42,8 @@ def gpu_waves_step_emitters(heights: np.ndarray,
     x, y = cuda.grid(2)
     for e_x, e_y, wavelength, amplitude, offset in emitters:
         if e_x == x and e_y == y:
-            heights[x, y] = np.sin((offset + simulation_time / wavelength / pixels_per_centimeter * speed) * np.pi * 2) \
+            offset /= 1000
+            heights[x, y] = np.sin((offset + simulation_time) / wavelength / pixels_per_centimeter * speed * np.pi * 2)\
                             * amplitude
 
 
@@ -60,8 +61,9 @@ def gpu_waves_step(heights: np.ndarray,
 
         for e_x, e_y, wavelength, amplitude, offset in emitters:
             if e_x == x and e_y == y:
+                offset /= 1000
                 heights[x, y] = \
-                    np.sin((offset + simulation_time / wavelength / pixels_per_centimeter * speed) * np.pi * 2) \
+                    np.sin((offset + simulation_time) / wavelength / pixels_per_centimeter * speed * np.pi * 2) \
                     * amplitude
 
         group.sync()

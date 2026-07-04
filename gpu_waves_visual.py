@@ -14,13 +14,15 @@ if __name__ == "__main__":
         speed=34300
         # speed=int(2.998e+10)
     )
-    sim.add_emitter(Emitter(250, 250, 5, 100, 0))
+    # sim.add_emitter(Emitter(250, 250, 5, 100, 0))
 
-    # sim.add_emitters(*[Emitter(random.randint(0, sim.heights.shape[0]),
-    #                            random.randint(0, sim.heights.shape[1]),
-    #                            random.uniform(0.1, 20),
-    #                            random.uniform(1, 10),
-    #                            0) for _ in range(5)])
+    # sim.add_emitters(Emitter(250, 250, 5, 100, 0), Emitter(250, 251, 5, 100, 1))
+
+    sim.add_emitters(*[Emitter(random.randint(0, sim.heights.shape[0]),
+                               random.randint(0, sim.heights.shape[1]),
+                               random.uniform(0.1, 20),
+                               random.uniform(1, 10),
+                               0) for _ in range(5)])
 
     # count = 500
     # distance = 300
