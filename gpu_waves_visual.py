@@ -18,11 +18,19 @@ if __name__ == "__main__":
 
     sim.add_emitters(*[Emitter(random.randint(0, sim.heights.shape[0]),
                                random.randint(0, sim.heights.shape[1]),
-                               random.uniform(0.1, 10),
+                               random.uniform(0.1, 20),
                                random.uniform(1, 10),
                                0) for _ in range(5)])
 
-    speed_up = 0.1
+    # count = 500
+    # distance = 300
+    # sim.add_emitters(*[Emitter(100,
+    #                            250 + distance/count * y,
+    #                            2,
+    #                            0.1,
+    #                            0) for y in range(count)])
+
+    speed_up = 1
 
     screen = pygame.display.set_mode((700, 700), pygame.RESIZABLE)
 
@@ -48,7 +56,7 @@ if __name__ == "__main__":
         #                     * sim.centimeters_count * sim.speed) < 0.01:
         #         sim.remove_emitter(to_delete)
         #     else:
-        #         to_delete.amplitude /= 10
+        #         to_delete.amplitude /= 2
         #         sim.bake_emitters()
 
         pygame.display.update()
