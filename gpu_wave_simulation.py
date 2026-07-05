@@ -26,9 +26,11 @@ class WaveSimulation:
                  size=(500, 500),
                  centimeters_count=200,
                  emitters: list[Emitter] = None,
-                 speed=34300):
+                 speed=34300,
+                 border_fade=0):
         self.speed = speed
         self.centimeters_count = centimeters_count
+        self.border_fade = border_fade
 
         self.heights = cuda.to_device(np.zeros(size))
         self.velocities = cuda.to_device(np.zeros(size))
@@ -74,7 +76,7 @@ class WaveSimulation:
                                         self.simulation_time,
                                         self.get_pixels_per_centimeter(),
                                         self.speed)
-            gpu_waves_step_heights(self.heights, self.velocities, 1)
+            gpu_waves_step_heights(self.heights, self.velocities, 1, self.border_fade)
             gpu_waves_step_velocities(self.heights, self.velocities, 1)
 
     def get_image(self, black_and_white=False):

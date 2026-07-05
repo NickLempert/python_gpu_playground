@@ -9,25 +9,27 @@ from gpu_wave_simulation import WaveSimulation, Emitter
 if __name__ == "__main__":
 
     sim = WaveSimulation(
-        size=(700, 700),
-        centimeters_count=350,
-        speed=34300
-        # speed=int(2.998e+10)
+        size=(900, 900),
+        centimeters_count=450,
+        speed=34300,
+        # speed=int(2.998e+10),
+        border_fade=150
     )
-    # sim.add_emitter(Emitter(250, 250, 5, 100, 0))
+    # sim.add_emitter(Emitter(250+sim.border_fade, 250+sim.border_fade, 5, 10, 0))
 
-    # sim.add_emitters(Emitter(250, 250, 5, 100, 0), Emitter(250, 251, 5, 100, 1))
+    # sim.add_emitters(Emitter(250+sim.border_fade, 250+sim.border_fade, 5, 10, 0),
+    #                  Emitter(250+sim.border_fade, 251+sim.border_fade, 5, 10, 1))
 
-    sim.add_emitters(*[Emitter(random.randint(0, sim.heights.shape[0]),
-                               random.randint(0, sim.heights.shape[1]),
+    sim.add_emitters(*[Emitter(random.randint(sim.border_fade, sim.heights.shape[0]-sim.border_fade),
+                               random.randint(sim.border_fade, sim.heights.shape[1]-sim.border_fade),
                                random.uniform(0.1, 20),
                                random.uniform(1, 10),
                                0) for _ in range(5)])
 
     # count = 500
     # distance = 300
-    # sim.add_emitters(*[Emitter(100,
-    #                            250 + distance/count * y,
+    # sim.add_emitters(*[Emitter(100 + sim.border_fade,
+    #                            250 + distance/count * y + sim.border_fade,
     #                            2,
     #                            0.1,
     #                            0) for y in range(count)])
@@ -49,8 +51,12 @@ if __name__ == "__main__":
                 exit()
         sim.step(dt*speed_up)
         img = pygame.image.frombytes(sim.get_image(True).convert('RGB').tobytes(), sim.heights.shape, 'RGB')
-        img = pygame.transform.scale(img, screen.get_size())
-        screen.blit(img, (0, 0))
+        img = pygame.transform.scale(img, (screen.get_width()+sim.border_fade*2, screen.get_height()+sim.border_fade*2))
+        screen.blit(img, (-sim.border_fade, -sim.border_fade))
+
+        # for emitter in sim.emitters:
+        #     emitter.amplitude /= 1 + dt*speed_up
+        # sim.bake_emitters()
 
         # if random.random() < 0.01 and sim.emitters:
         #     to_delete = random.choice(sim.emitters)

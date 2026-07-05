@@ -9,11 +9,13 @@ from numba import cuda
 from utils import gpu_program
 
 
-@gpu_program(["f8[:,:],f8[:,:],f8"])
-def gpu_waves_step_heights(heights: np.ndarray, velocities: np.ndarray, dt: float):
+@gpu_program(["f8[:,:],f8[:,:],f8,int32"])
+def gpu_waves_step_heights(heights: np.ndarray, velocities: np.ndarray, dt: float, border_fade: int):
     x, y = cuda.grid(2)
     if x < heights.shape[0] and y < heights.shape[1]:
         heights[x, y] += velocities[x, y] * dt
+        if not (border_fade < x <= heights.shape[0]-border_fade and border_fade < y <= heights.shape[1]-border_fade):
+            heights[x, y] /= min(min(x, heights.shape[0]-x), min(y, heights.shape[1]-y))/border_fade/20+1
 
 
 @gpu_program(["f8[:,:],f8[:,:],f8"])
@@ -43,46 +45,8 @@ def gpu_waves_step_emitters(heights: np.ndarray,
     for e_x, e_y, wavelength, amplitude, offset in emitters:
         if e_x == x and e_y == y:
             offset /= 1000
-            heights[x, y] = np.sin((offset + simulation_time) / wavelength / pixels_per_centimeter * speed * np.pi * 2)\
+            heights[x, y] = np.sin((offset + simulation_time) / wavelength / pixels_per_centimeter * speed * np.pi * 2) \
                             * amplitude
-
-
-@gpu_program(["f8[:,:],f8[:,:],f8[:,:],f8,f8,f8,float64"])
-def gpu_waves_step(heights: np.ndarray,
-                   velocities: np.ndarray,
-                   emitters: np.ndarray,
-                   dt: float,
-                   simulation_time: float,
-                   pixels_per_centimeter: float,
-                   speed: float):
-    group = cuda.cg.this_grid()
-    x, y = cuda.grid(2)
-    if x < heights.shape[0] and y < heights.shape[1]:
-
-        for e_x, e_y, wavelength, amplitude, offset in emitters:
-            if e_x == x and e_y == y:
-                offset /= 1000
-                heights[x, y] = \
-                    np.sin((offset + simulation_time) / wavelength / pixels_per_centimeter * speed * np.pi * 2) \
-                    * amplitude
-
-        group.sync()
-
-        heights[x, y] += velocities[x, y] * dt
-
-        group.sync()
-
-        sum_heights = 0
-        count_heights = 0
-        for d_x in range(-1, 2):
-            for d_y in range(-1, 2):
-                if d_x != 0 or d_y != 0:
-                    n_x, n_y = x + d_x, y + d_y
-                    if 0 <= n_x < heights.shape[0] and 0 <= n_y < heights.shape[1]:
-                        sum_heights += heights[n_x, n_y] / (d_x ** 2 + d_y ** 2)
-                        count_heights += 1 / (d_x ** 2 + d_y ** 2)
-        target_height = sum_heights / count_heights
-        velocities[x, y] += (target_height - heights[x, y]) * dt
 
 
 if __name__ == '__main__':
@@ -111,7 +75,7 @@ if __name__ == '__main__':
     for progress in range(length_seconds * quality):
         gpu_waves_step_emitters(d_h, d_e, progress / quality, min(h.shape) / box_size_centimeters, 34300)
         for _ in range(additional_speed):
-            gpu_waves_step_heights(d_h, d_v, 1 / quality)
+            gpu_waves_step_heights(d_h, d_v, 1 / quality, 0)
             gpu_waves_step_velocities(d_h, d_v, 1 / quality)
         # full_gpu_step(d_h, d_v, 1/quality, shape=h.shape)
 
