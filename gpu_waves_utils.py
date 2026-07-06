@@ -29,8 +29,10 @@ def gpu_waves_step_velocities(heights: np.ndarray, velocities: np.ndarray, dt: f
                 if d_x != 0 or d_y != 0:
                     n_x, n_y = x + d_x, y + d_y
                     if 0 <= n_x < heights.shape[0] and 0 <= n_y < heights.shape[1]:
-                        sum_heights += heights[n_x, n_y] / (d_x ** 2 + d_y ** 2)
-                        count_heights += 1 / (d_x ** 2 + d_y ** 2)
+                        # sum_heights += heights[n_x, n_y] / (d_x ** 2 + d_y ** 2)
+                        # count_heights += 1 / (d_x ** 2 + d_y ** 2)
+                        sum_heights += heights[n_x, n_y]
+                        count_heights += 1
         target_height = sum_heights / count_heights
         velocities[x, y] += (target_height - heights[x, y]) * dt
 

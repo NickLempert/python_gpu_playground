@@ -42,9 +42,10 @@ def voronoi(image: np.ndarray, grid_size: int, randomness: int):
 
 if __name__ == '__main__':
     print('pre_start')
-    arr = cuda.to_device(np.zeros((10000, 10000), dtype=float))
+    arr = cuda.to_device(np.zeros((20000, 20000), dtype=float))
     print('start')
-    voronoi(arr, 20, 200)
+    # voronoi(arr, 20, 200)
+    voronoi(arr, 20, 20)
     cuda.synchronize()
     print('end')
     arr_back = arr.copy_to_host()
