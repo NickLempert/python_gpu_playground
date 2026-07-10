@@ -1,6 +1,6 @@
 import time
 
-from numba import cuda
+from numba import cuda, jit
 import numpy as np
 
 from utils import gpu_program
@@ -26,6 +26,7 @@ def is_prime(inp: int, output: np.array):
         output[0] = 0
 
 
+@jit('boolean(uint64)')
 def non_gpu_is_prime(inp: int):
     for num in range(2, int(inp**0.5)):
         if inp % num == 0:
