@@ -9,7 +9,7 @@ from numba import cuda
 from utils import gpu_program
 
 
-@numba.vectorize(['float32(float32)'], target='cuda')
+@numba.vectorize(['float32(float32)', 'int32(int32)'], target='cuda')
 def erase(a):
     return 0
 
@@ -48,6 +48,9 @@ class NeuralNetwork:
 
         self.activation_function = activation_function
 
+        self.weights_copy = None
+        self.biases_copy = None
+
     @staticmethod
     @gpu_program(['int32, int32[:], int32, int32, float32[:], float32[:], float32[:]'],
                  dimensions=1, default_shape_source=5)
@@ -68,12 +71,14 @@ class NeuralNetwork:
             cuda.atomic.add(nodes, current_out_node, biases[current_out_node])
 
     @staticmethod
-    @gpu_program(['float32[:], uint32, float32'],
+    @gpu_program(['float32[:], uint32, float32, float32'],
                  dimensions=1)
-    def mutate_parameters(parameters, seed, amount):
+    def mutate_parameters(parameters, seed, amount, chance):
         off = cuda.grid(1)
         if off < parameters.size:
             seed = (seed * 3266489917) + (off ** 2 * 3266489917)
+            if seed % 2:
+                return
             seed ^= seed >> 15
             seed *= 2246822519
             seed ^= seed >> 13
@@ -85,6 +90,7 @@ class NeuralNetwork:
         erase(self.nodes, out=self.nodes)
         for ind, arg in enumerate(args):
             self.nodes[ind] = arg
+
         layer = 1
         first_connection = 0
         first_out_node = 0
@@ -108,21 +114,31 @@ class NeuralNetwork:
         # return nodes[-self.structure_local[-1]:]
         return nodes[-self.structure[-1]:]
 
-    def mutate(self, amount: float, weight_amount=1.0, bias_amount=0.5):
+    def mutate(self, amount: float, weight_amount=1.0, bias_amount=0.5, chance=1.0):
         seed = random.randrange(9999999999)
-        self.mutate_parameters(self.weights, seed, amount*weight_amount)
-        self.mutate_parameters(self.biases, seed, amount*bias_amount)
+        self.mutate_parameters(self.weights, seed, amount*weight_amount, chance)
+        self.mutate_parameters(self.biases, seed, amount*bias_amount, chance)
 
-    def evolve(self, batch_inputs: Sequence[Sequence[float]], batch_outputs: Sequence[Sequence[float]], amount: float):
-        results = []
-        for i, o in zip(batch_inputs, batch_outputs):
-            results.append(abs(np.array(o)-self(*i)))
-        avg_error = sum(map(sum, results))/len(batch_inputs)
+    def evolve(self,
+               batch_inputs: Sequence[Sequence[float]],
+               batch_outputs: Sequence[Sequence[float]],
+               amount: float,
+               chance: float = 1.0,
+               baked_error: float | None = None):
+        if baked_error:
+            avg_error = baked_error
+        else:
+            results = []
+            for i, o in zip(batch_inputs, batch_outputs):
+                results.append(abs(np.array(o)-self(*i)))
+            avg_error = sum(map(sum, results))/len(batch_inputs)
 
-        old_weights = self.weights.copy_to_host()
-        old_biases = self.biases.copy_to_host()
+        if self.weights_copy is None:
+            self.weights_copy = self.weights.copy_to_host()
+        if self.biases_copy is None:
+            self.weights_copy = self.biases.copy_to_host()
 
-        self.mutate(amount)
+        self.mutate(amount, chance=chance)
 
         results = []
         for i, o in zip(batch_inputs, batch_outputs):
@@ -130,8 +146,11 @@ class NeuralNetwork:
         new_avg_error = sum(map(sum, results))/len(batch_inputs)
 
         if new_avg_error > avg_error:
-            self.weights = cuda.to_device(old_weights)
-            self.biases = cuda.to_device(old_biases)
+            self.weights = cuda.to_device(self.weights_copy)
+            self.biases = cuda.to_device(self.weights_copy)
+        else:
+            self.weights_copy = self.weights.copy_to_host()
+            self.biases_copy = self.biases.copy_to_host()
 
         return min(new_avg_error, avg_error)
 
@@ -146,11 +165,14 @@ if __name__ == '__main__':
     #     print(time.perf_counter()-t)
     #     print(r)
 
-    test_network = NeuralNetwork([2, 10, 4, 4, 1], activation_function=relu)
-    for step in range(5000):
+    test_network = NeuralNetwork([2, 4, 4, 1], activation_function=sigmoid)
+    error = None
+    for step in range(10000):
         error = test_network.evolve([[1, 1], [0, 0], [0.5, 0.5]],
                                     [[1, 1], [-1, -1], [0.5, 0.5]],
-                                    random.uniform(0, 5))
+                                    random.uniform(0, 5),
+                                    random.random(),
+                                    error)
         if step % 100 == 0:
             print(error, step)
     print(test_network(1, 1))
