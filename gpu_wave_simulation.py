@@ -3,7 +3,7 @@ import random
 import time
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from numba import cuda
 
 from gpu_waves_utils import gpu_waves_step_heights, gpu_waves_step_velocities, gpu_waves_step_emitters
@@ -34,6 +34,7 @@ class WaveSimulation:
 
         self.heights = cuda.to_device(np.zeros(size))
         self.velocities = cuda.to_device(np.zeros(size))
+        self.passability_map = cuda.to_device(np.ones(size))
         self.emitters = emitters or []
         self.steps = 0
         self.simulation_time = 0
@@ -42,6 +43,11 @@ class WaveSimulation:
         self.bake_emitters()
 
         self.uncomputed_time = 0
+
+    def update_passability(self, new_value: float, x1=0, y1=0, x2=-1, y2=-1):
+        passability_map = self.passability_map.copy_to_host()
+        passability_map[x1:x2, y1:y2] = new_value
+        self.passability_map = cuda.to_device(passability_map)
 
     def bake_emitters(self):
         self.baked_emitters = None
@@ -77,12 +83,12 @@ class WaveSimulation:
                                         self.get_pixels_per_centimeter(),
                                         self.speed)
             gpu_waves_step_heights(self.heights, self.velocities, 1, self.border_fade)
-            gpu_waves_step_velocities(self.heights, self.velocities, 1)
+            gpu_waves_step_velocities(self.heights, self.velocities, self.passability_map, 1)
 
     def get_image(self, black_and_white=False):
         heights = self.heights.copy_to_host()
         if black_and_white:
-            return Image.fromarray((heights*2000))
+            return ImageOps.flip(Image.fromarray((heights*2000))).rotate(-90)
         velocities = abs(self.velocities.copy_to_host())
 
         # image = Image.fromarray(h * 255)
@@ -93,7 +99,7 @@ class WaveSimulation:
         positive = heights * 100
         velocities = velocities * 255
         image = Image.fromarray(np.dstack((negative, positive, velocities)).astype(np.uint8), 'RGB')
-        return image
+        return ImageOps.flip(image).rotate(-90)
 
 
 if __name__ == "__main__":

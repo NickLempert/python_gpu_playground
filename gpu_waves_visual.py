@@ -15,10 +15,13 @@ if __name__ == "__main__":
         # speed=int(2.998e+10),
         border_fade=150
     )
+    # sim.update_passability(1)
+    # sim.update_passability(0.1, 400, 450, 600, 600)
+
     # sim.add_emitter(Emitter(250+sim.border_fade, 250+sim.border_fade, 5, 10, 0))
 
     # sim.add_emitters(Emitter(250+sim.border_fade, 250+sim.border_fade, 5, 10, 0),
-    #                  Emitter(250+sim.border_fade, 251+sim.border_fade, 5, 10, 1))
+    #                  Emitter(251+sim.border_fade, 250+sim.border_fade, 5, 10, 1))
 
     sim.add_emitters(*[Emitter(random.randint(sim.border_fade, sim.heights.shape[0]-sim.border_fade),
                                random.randint(sim.border_fade, sim.heights.shape[1]-sim.border_fade),

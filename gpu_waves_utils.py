@@ -18,8 +18,8 @@ def gpu_waves_step_heights(heights: np.ndarray, velocities: np.ndarray, dt: floa
             heights[x, y] /= min(min(x, heights.shape[0]-x), min(y, heights.shape[1]-y))/border_fade/20+1
 
 
-@gpu_program(["f8[:,:],f8[:,:],f8"])
-def gpu_waves_step_velocities(heights: np.ndarray, velocities: np.ndarray, dt: float):
+@gpu_program(["f8[:,:],f8[:,:],f8[:,:],f8"])
+def gpu_waves_step_velocities(heights: np.ndarray, velocities: np.ndarray, passability_map: np.ndarray, dt: float):
     x, y = cuda.grid(2)
     if x < heights.shape[0] and y < heights.shape[1]:
         sum_heights = 0
@@ -34,7 +34,11 @@ def gpu_waves_step_velocities(heights: np.ndarray, velocities: np.ndarray, dt: f
                         sum_heights += heights[n_x, n_y]
                         count_heights += 1
         target_height = sum_heights / count_heights
-        velocities[x, y] += (target_height - heights[x, y]) * dt
+        velocities[x, y] += (target_height - heights[x, y]) * dt * passability_map[x, y]
+
+        # next_step = velocities[x, y] * passability_map[x, y]
+        # dif = next_step - velocities[x, y]
+        # velocities[x, y] += dif*dt
 
 
 @gpu_program(["f8[:,:],f8[:,:],f8,f8,f8"], default_shape_source=0)
