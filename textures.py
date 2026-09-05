@@ -3,7 +3,6 @@ import math
 import numpy as np
 from PIL import Image
 from numba import cuda
-from numba.cuda.random import xoroshiro128p_uniform_float32
 
 import utils
 from utils import gpu_program
@@ -42,15 +41,17 @@ def voronoi(image: np.ndarray, grid_size: int, randomness: int):
 
 
 @gpu_program()
-def perlin_gradients_noise(image: np.ndarray, vector_grid_resolution: float):
+def perlin_gradient_noise(image: np.ndarray, vector_grid_resolution: float):
     x, y = cuda.grid(2)
     if x >= image.shape[0] or y >= image.shape[1]:
         return
     vector_cell_size = image.shape[0]/vector_grid_resolution, image.shape[1]/vector_grid_resolution
     closest_vector_grid_cell = round(x/vector_cell_size[0]), round(y/vector_cell_size[1])
     local_seed = utils.combine_seeds(closest_vector_grid_cell)
-    v_x = 1*(utils.random(local_seed * 41 + 12) % 9999+1) * (utils.random(local_seed * 997 + 126) % 3 - 1)
-    v_y = 1*(utils.random(local_seed * 971 + 124) % 9999+1) * (utils.random(local_seed * 557 + 128) % 3 - 1)
+    sign_x = 1 if utils.random(local_seed * 997 + 126) % 2 else -1
+    sign_y = 1 if utils.random(local_seed * 557 + 128) % 2 else -1
+    v_x = 1 * (utils.random(local_seed * 41 + 12) % 999 + 1) * sign_x
+    v_y = 1 * (utils.random(local_seed * 971 + 124) % 999 + 1) * sign_y
     d = (v_x**2 + v_y**2)**0.5
     v_x /= d
     v_y /= d
@@ -145,7 +146,7 @@ def generate_height_map(image: np.ndarray,
                         contrast=0.0,
                         zoom=1.0,
                         position=(0.0, 0.0)):
-    position = position[0]+image.shape[0]/2, position[1]+image.shape[1]/2,
+    position = position[0]*zoom+image.shape[0]/2, position[1]*zoom+image.shape[1]/2,
     for i in range(iterations):
         layer = i+1
         bias = 0
@@ -169,7 +170,7 @@ if __name__ == '__main__':
     # generate_height_map(arr, 255*1.5, contrast=0.5)
     generate_height_map(arr, 255*1.5, contrast=0.0, iterations=6, zoom=1, position=(0, 0), seed=0)
     height_rings(arr)
-    # perlin_gradients_noise(arr, 20)
+    # perlin_gradient_noise(arr, 20)
     cuda.synchronize()
     print('end')
     arr_back = arr.copy_to_host()
