@@ -28,6 +28,16 @@ def gpu_program(compile_options=(), dimensions=2, auto_compile=True, default_sha
     return __helper__
 
 
+@gpu_program()
+def clear_gray_image(image: np.ndarray):
+    x, y = cuda.grid(2)
+
+    if x >= image.shape[0] or y >= image.shape[1]:
+        return
+
+    image[x, y] = 0
+
+
 @cuda.jit(device=True, inline=True)
 def combine_seeds(seeds):
     out = 0
