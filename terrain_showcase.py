@@ -72,7 +72,7 @@ def main(screen=None):
             change_detected = True
 
         if change_detected:
-            utils.clear_gray_image(img_arr)
+            # utils.clear_gray_image(img_arr)
             textures.generate_height_map(img_arr,
                                          base_height=255*1.5,
                                          iterations=6,
@@ -95,7 +95,7 @@ def main(screen=None):
             textures.height_rings(img_arr, ring_distance, ring_width)
 
             img_arr_back = img_arr.copy_to_host()
-            img_arr_back = np.abs(img_arr_back)
+            # img_arr_back = img_arr_back.clip(0, 256)
 
             # img = Image.fromarray(img_arr_back).rotate(-90).resize(screen.get_size()).convert('RGB')
             img = Image.fromarray(img_arr_back).convert('RGB')
