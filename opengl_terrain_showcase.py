@@ -45,13 +45,13 @@ def main(screen=None):
             previous_mouse_pos = pygame.mouse.get_pos()
 
         if pygame.key.get_pressed()[pygame.K_w]:
-            position[1] += dt*100
-        if pygame.key.get_pressed()[pygame.K_s]:
             position[1] -= dt*100
+        if pygame.key.get_pressed()[pygame.K_s]:
+            position[1] += dt*100
         if pygame.key.get_pressed()[pygame.K_d]:
-            position[0] += dt*100
-        if pygame.key.get_pressed()[pygame.K_a]:
             position[0] -= dt*100
+        if pygame.key.get_pressed()[pygame.K_a]:
+            position[0] += dt*100
         if pygame.key.get_pressed()[pygame.K_EQUALS]:
             zoom *= (1+dt)
         if pygame.key.get_pressed()[pygame.K_MINUS]:
