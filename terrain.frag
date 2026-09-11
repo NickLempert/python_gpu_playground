@@ -11,6 +11,7 @@ uniform int seed=0;
 uniform float ring_width=2.0;
 uniform float ring_distance=10;
 
+
 int random(int seed){
     int out_seed = seed;
     out_seed *= 3266489917;
@@ -140,21 +141,18 @@ void main() {
 
     float sample_length = 0.1;
     float slope = (value - terrain(adjusted_position+vec2(1, -1)*sample_length))/sample_length;
-    float shaded_value = value;
+    float brightness = 1;
     if (slope < 0) {
-        shaded_value = value+slope*50*value*zoom;
+        brightness += slope*50*value*zoom;
     }
 
     float ring = mod(value*255, ring_distance);
     if (ring < ring_width) {
         ring -= 0.5 * ring_width;
         ring /= ring_width / 2;
-        value = shaded_value - (shaded_value - (1 - value)) * smoothstep(1 - abs(ring));
+        value = value - (value - (1 - value)) * smoothstep(1 - abs(ring));
     }
-    else {
-        value = shaded_value;
-    }
-    vec3 color = vec3(1, 1, 1) * value;
+    vec3 color = vec3(1, 1, 1) * value * brightness;
     fragColor = vec4(color, 1);
 }
 
