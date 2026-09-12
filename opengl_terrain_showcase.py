@@ -60,6 +60,11 @@ def main(screen=None):
         terrain_shader.put_variables(zoom=zoom,
                                      position=(position[0]+displacement[0],  position[1]+displacement[1]),
                                      resolution=resolution)
+        try:
+            terrain_shader.put_variables(time=time.perf_counter())
+            terrain_shader.put_variables(iterations=10)
+        except KeyError:
+            pass
 
         terrain_shader.render()
 

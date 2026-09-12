@@ -10,7 +10,7 @@ class TerrainShader(shader2d.FullScreenShader):
                  position: tuple[float, float] | list[float, float] = (0.0, 0.0),
                  zoom=1.0,
                  contrast=0.0):
-        with open('terrain.frag', 'r') as f:
+        with open('colored_terrain.frag', 'r') as f:
             super().__init__(f.read())
         self.put_variables(base_height=base_height,
                            iterations=iterations,
